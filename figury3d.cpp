@@ -52,8 +52,15 @@ int main()
     Color infoColor = { 195,190,238,255 };
     Color signColor = { 22,72,22,255 };
 
-    //TEST
-    piece pionek = piece(1, 2);
+    //TEST  UTWORZENIE RZEDU BIAYCH PIONOW
+    piece pionekA2 = piece(1, 2);
+    piece pionekB2 = piece(2, 2);
+    piece pionekC2 = piece(3, 2);
+    piece pionekD2 = piece(4, 2);
+    piece pionekE2 = piece(5, 2);
+    piece pionekF2 = piece(6, 2);
+    piece pionekG2 = piece(7, 2);
+    piece pionekH2 = piece(8, 2);
 
     DisableCursor();
     SetTargetFPS(60);
@@ -92,8 +99,16 @@ int main()
             }
         }
 
-        //TEST
-        pionek.DrawPiece(pawnModel);
+        //DODANIE RZEDU BIALYCH PIONOW
+
+        pionekA2.DrawPiece(pawnModel);
+        pionekB2.DrawPiece(pawnModel);
+        pionekC2.DrawPiece(pawnModel);
+        pionekD2.DrawPiece(pawnModel);
+        pionekE2.DrawPiece(pawnModel);
+        pionekF2.DrawPiece(pawnModel);
+        pionekG2.DrawPiece(pawnModel);
+        pionekH2.DrawPiece(pawnModel);
 
         if (dot) {
             DrawCylinder(dotCenter, 0.1f, 0.1f, 0.05f, 8, RED);
@@ -147,7 +162,7 @@ int main()
             DrawRectangleLines(20, 60, screenWidth - 40, 300, BLACK);
             DrawText("Spacja - odblokuj/zablokuj kamere", 25, 65, 40, BLACK);
             DrawText("W, A, S, D - sterowanie pozycja kamery", 25, 105, 40, BLACK);
-            DrawText("Strzalkami operujemy kątea kamery", 25, 145, 40, BLACK);
+            DrawText("Strzalkami operujemy katem kamery", 25, 145, 40, BLACK);
         }
         EndDrawing();
     }
