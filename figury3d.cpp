@@ -15,6 +15,8 @@ public:
 
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 
+void ResetCameraPosition(Camera3D& camera);
+
 int main()
 {
     const int screenWidth = 1600;
@@ -23,14 +25,13 @@ int main()
     InitWindow(screenWidth, screenHeight, "Szachy 3D");
 
     Camera3D camera = { 0 };
-    camera.position = Vector3{ 10.0f, 10.0f, 10.0f };
-    camera.target = Vector3{ 0.0f, 0.0f, 0.0f };
-    camera.up = Vector3{ 0.0f, 1.0f, 0.0f };
+    ResetCameraPosition(camera);
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    //folder do zrobienia
+    //folder do zrobienia  JD
     Model pawnModel = LoadModel("obj/pawn.obj");
+    Model knightModel = LoadModel("obj/knight.obj");
 
     bool spot = true;
     bool start = false;
@@ -61,6 +62,20 @@ int main()
     piece pionekF2 = piece(6, 2);
     piece pionekG2 = piece(7, 2);
     piece pionekH2 = piece(8, 2);
+
+    piece konB1 = piece(2, 1);
+
+    // UTWORZENIE RZEDU CZARNYCH PIONOW
+
+    piece pionekA7 = piece(1, 7);
+    piece pionekB7 = piece(2, 7);
+    piece pionekC7 = piece(3, 7);
+    piece pionekD7 = piece(4, 7);
+    piece pionekE7 = piece(5, 7);
+    piece pionekF7 = piece(6, 7);
+    piece pionekG7 = piece(7, 7);
+    piece pionekH7 = piece(8, 7);
+
 
     DisableCursor();
     SetTargetFPS(60);
@@ -110,6 +125,19 @@ int main()
         pionekG2.DrawPiece(pawnModel);
         pionekH2.DrawPiece(pawnModel);
 
+        konB1.DrawPiece(knightModel);
+
+        //DODANIE RZEDU CZARNYH PIONOW
+
+        pionekA7.DrawPiece(pawnModel);
+        pionekB7.DrawPiece(pawnModel);
+        pionekC7.DrawPiece(pawnModel);
+        pionekD7.DrawPiece(pawnModel);
+        pionekE7.DrawPiece(pawnModel);
+        pionekF7.DrawPiece(pawnModel);
+        pionekG7.DrawPiece(pawnModel);
+        pionekH7.DrawPiece(pawnModel);
+
         if (dot) {
             DrawCylinder(dotCenter, 0.1f, 0.1f, 0.05f, 8, RED);
         }
@@ -123,6 +151,9 @@ int main()
         else if (!cameraLock)
             UpdateCamera(&camera, CAMERA_FREE);
 
+        if (IsKeyPressed('B')) {
+            ResetCameraPosition(camera);
+        }
 
         SetMouseCursor(3);
 
@@ -163,6 +194,7 @@ int main()
             DrawText("Spacja - odblokuj/zablokuj kamere", 25, 65, 40, BLACK);
             DrawText("W, A, S, D - sterowanie pozycja kamery", 25, 105, 40, BLACK);
             DrawText("Strzalkami operujemy katem kamery", 25, 145, 40, BLACK);
+            DrawText("B reset polozenia kamery", 25, 185, 40, BLACK);
         }
         EndDrawing();
     }
@@ -260,4 +292,11 @@ void piece::DrawPiece(Model model)
         color = BLACK;
     Vector3 pos = { -4.45 + position.x, 0.0f, 4.5f - position.y };
     DrawModel(model, pos, 0.2f, color);
+}
+
+void ResetCameraPosition(Camera3D& camera)
+{
+    camera.position = Vector3{ 10.0f, 10.0f, 10.0f };
+    camera.target = Vector3{ 0.0f, 0.0f, 0.0f };
+    camera.up = Vector3{ 0.0f, 1.0f, 0.0f };
 }
