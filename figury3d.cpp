@@ -1,5 +1,6 @@
 ﻿#include "raylib.h"
 #include "rlgl.h"
+#include "cmath"
 
 void DrawSign(int sign, Vector3 position, Color color);
 
@@ -8,10 +9,15 @@ public:
     piece(int x, int y);
     ~piece();
     Vector2 position;
+    Vector2 targetPosition;
+    bool isMoving;
+    float moveSpeed;
     int pieceType;
     bool isWhite;
     void DrawPiece(Model model);
     void MoveForward();
+    void MoveTo(int x, int y);
+    void UpdatePosition();
 };
 
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
@@ -83,10 +89,27 @@ int main()
     SetTargetFPS(60);
     while (!WindowShouldClose())
     {
+        /// aktualizacja pozycja kazdej figury przed rysowaniem
+        pionekA2.UpdatePosition();
+        pionekB2.UpdatePosition();
+        pionekC2.UpdatePosition();
+        pionekD2.UpdatePosition();
+        pionekE2.UpdatePosition();
+        pionekF2.UpdatePosition();
+        pionekG2.UpdatePosition();
+        pionekH2.UpdatePosition();
+        konB1.UpdatePosition();
+        pionekA7.UpdatePosition();
+        pionekB7.UpdatePosition();
+        pionekC7.UpdatePosition();
+        pionekD7.UpdatePosition();
+        pionekE7.UpdatePosition();
+        pionekF7.UpdatePosition();
+        pionekG7.UpdatePosition();
+        pionekH7.UpdatePosition();
+
         BeginDrawing();
-
         ClearBackground(backgroundColor);
-
         BeginMode3D(camera);
 
         DrawCubeV(borderPosition1, borderSize1, borderColor);
@@ -115,7 +138,7 @@ int main()
                 spot = !spot;
             }
         }
-
+   
         //DODANIE RZEDU BIALYCH PIONOW
 
         pionekA2.DrawPiece(pawnModel);
@@ -157,8 +180,8 @@ int main()
             ResetCameraPosition(camera);
         }
 
-        if (IsKeyPressed(KEY_F)) {
-            pionekA2.MoveForward();
+        if (IsKeyPressed('F')) {
+            pionekA2.MoveTo(pionekA2.position.x + 3, pionekA2.position.y + 3);
         }
 
         SetMouseCursor(3);
@@ -255,6 +278,9 @@ piece::piece(int x, int y)
 {
     position.x = x;
     position.y = y;
+    targetPosition = position;
+    isMoving = false;
+    moveSpeed = 0.05f;
     if (y == 1 or y == 2)
         isWhite = true;
     else
@@ -303,10 +329,33 @@ void piece::DrawPiece(Model model)
 void piece::MoveForward()
 {
     if (isWhite) {
-        position.y += 3;
+        position.y += 1;
     }
     else {
         position.y -= 1;
+    }
+}
+void piece::MoveTo(int x, int y) {
+    targetPosition.x = x;
+    targetPosition.y = y;
+    isMoving = true;
+}
+
+void piece::UpdatePosition() {
+    if (!isMoving) return;
+
+    // Interpolacja pozycji
+    float deltaX = targetPosition.x - position.x;
+    float deltaY = targetPosition.y - position.y;
+    float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance < moveSpeed) {
+        position = targetPosition;
+        isMoving = false;
+    }
+    else {
+        position.x += (deltaX / distance) * moveSpeed;
+        position.y += (deltaY / distance) * moveSpeed;
     }
 }
 
