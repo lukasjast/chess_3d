@@ -11,10 +11,12 @@ public:
     int pieceType;
     bool isWhite;
     void DrawPiece(Model model);
+    void MoveForward();
 };
 
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 
+//dodane funkcje
 void ResetCameraPosition(Camera3D& camera);
 
 int main()
@@ -153,6 +155,10 @@ int main()
 
         if (IsKeyPressed('B')) {
             ResetCameraPosition(camera);
+        }
+
+        if (IsKeyPressed(KEY_F)) {
+            pionekA2.MoveForward();
         }
 
         SetMouseCursor(3);
@@ -294,9 +300,21 @@ void piece::DrawPiece(Model model)
     DrawModel(model, pos, 0.2f, color);
 }
 
+void piece::MoveForward()
+{
+    if (isWhite) {
+        position.y += 3;
+    }
+    else {
+        position.y -= 1;
+    }
+}
+
 void ResetCameraPosition(Camera3D& camera)
 {
     camera.position = Vector3{ 10.0f, 10.0f, 10.0f };
     camera.target = Vector3{ 0.0f, 0.0f, 0.0f };
     camera.up = Vector3{ 0.0f, 1.0f, 0.0f };
 }
+
+
