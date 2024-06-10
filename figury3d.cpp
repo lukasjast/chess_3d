@@ -1,6 +1,7 @@
 ﻿#include "raylib.h"
 #include "rlgl.h"
 #include "cmath"
+#include <vector>
 
 void DrawSign(int sign, Vector3 position, Color color);
 
@@ -14,6 +15,11 @@ public:
     float moveSpeed;
     int pieceType;
     bool isWhite;
+    bool selected;
+    float heightOffset;
+    float targetHeightOffset;
+    int moveStage;
+
     void DrawPiece(Model model);
     void MoveForward();
     void MoveTo(int x, int y);
@@ -37,15 +43,20 @@ int main()
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    //folder do zrobienia  JD
     Model pawnModel = LoadModel("obj/pawn.obj");
     Model knightModel = LoadModel("obj/knight.obj");
+    Model bishopModel = LoadModel("obj/bishop.obj");
+    Model rookModel = LoadModel("obj/rook.obj");
+    Model queenModel = LoadModel("obj/queen.obj");
+    Model kingModel = LoadModel("obj/king.obj");
 
     bool spot = true;
     bool start = false;
     bool cameraLock = false;
     bool info = false;
     bool dot = false;
+    bool whiteTurn = true;
+
     Color whiteSpot = { 249,232,213,255 };
     Color blackSpot = { 86,50,8,255 };
     Vector3 spotSize = { 1.0f,0.1f,1.0f };
@@ -61,52 +72,32 @@ int main()
     Color infoColor = { 195,190,238,255 };
     Color signColor = { 22,72,22,255 };
 
-    //TEST  UTWORZENIE RZEDU BIAYCH PIONOW
-    piece pionekA2 = piece(1, 2);
-    piece pionekB2 = piece(2, 2);
-    piece pionekC2 = piece(3, 2);
-    piece pionekD2 = piece(4, 2);
-    piece pionekE2 = piece(5, 2);
-    piece pionekF2 = piece(6, 2);
-    piece pionekG2 = piece(7, 2);
-    piece pionekH2 = piece(8, 2);
+    std::vector<piece> whites;
+    std::vector<piece> blacks;
 
-    piece konB1 = piece(2, 1);
 
-    // UTWORZENIE RZEDU CZARNYCH PIONOW
+    //tworzenie figur
 
-    piece pionekA7 = piece(1, 7);
-    piece pionekB7 = piece(2, 7);
-    piece pionekC7 = piece(3, 7);
-    piece pionekD7 = piece(4, 7);
-    piece pionekE7 = piece(5, 7);
-    piece pionekF7 = piece(6, 7);
-    piece pionekG7 = piece(7, 7);
-    piece pionekH7 = piece(8, 7);
-
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            piece p = piece(1 + j, 1 + i);
+            whites.push_back(p);
+            p = piece(1 + j, 7 + i);
+            blacks.push_back(p);
+        }
+    }
 
     DisableCursor();
     SetTargetFPS(60);
     while (!WindowShouldClose())
     {
         /// aktualizacja pozycja kazdej figury przed rysowaniem
-        pionekA2.UpdatePosition();
-        pionekB2.UpdatePosition();
-        pionekC2.UpdatePosition();
-        pionekD2.UpdatePosition();
-        pionekE2.UpdatePosition();
-        pionekF2.UpdatePosition();
-        pionekG2.UpdatePosition();
-        pionekH2.UpdatePosition();
-        konB1.UpdatePosition();
-        pionekA7.UpdatePosition();
-        pionekB7.UpdatePosition();
-        pionekC7.UpdatePosition();
-        pionekD7.UpdatePosition();
-        pionekE7.UpdatePosition();
-        pionekF7.UpdatePosition();
-        pionekG7.UpdatePosition();
-        pionekH7.UpdatePosition();
+        for (int i = 0; i < whites.size(); ++i) {
+            whites[i].UpdatePosition();
+        }
+        for (int i = 0; i < blacks.size(); ++i) {
+            blacks[i].UpdatePosition();
+        }
 
         BeginDrawing();
         ClearBackground(backgroundColor);
@@ -138,30 +129,50 @@ int main()
                 spot = !spot;
             }
         }
-   
-        //DODANIE RZEDU BIALYCH PIONOW
 
-        pionekA2.DrawPiece(pawnModel);
-        pionekB2.DrawPiece(pawnModel);
-        pionekC2.DrawPiece(pawnModel);
-        pionekD2.DrawPiece(pawnModel);
-        pionekE2.DrawPiece(pawnModel);
-        pionekF2.DrawPiece(pawnModel);
-        pionekG2.DrawPiece(pawnModel);
-        pionekH2.DrawPiece(pawnModel);
-
-        konB1.DrawPiece(knightModel);
-
-        //DODANIE RZEDU CZARNYH PIONOW
-
-        pionekA7.DrawPiece(pawnModel);
-        pionekB7.DrawPiece(pawnModel);
-        pionekC7.DrawPiece(pawnModel);
-        pionekD7.DrawPiece(pawnModel);
-        pionekE7.DrawPiece(pawnModel);
-        pionekF7.DrawPiece(pawnModel);
-        pionekG7.DrawPiece(pawnModel);
-        pionekH7.DrawPiece(pawnModel);
+        //rysowanie figur
+        for (int i = 0; i < whites.size(); ++i) {
+            switch (whites[i].pieceType) {
+            case PAWN:
+                whites[i].DrawPiece(pawnModel);
+                break;
+            case KNIGHT:
+                whites[i].DrawPiece(knightModel);
+                break;
+            case BISHOP:
+                whites[i].DrawPiece(bishopModel);
+                break;
+            case ROOK:
+                whites[i].DrawPiece(rookModel);
+                break;
+            case QUEEN:
+                whites[i].DrawPiece(queenModel);
+                break;
+            default:
+                whites[i].DrawPiece(kingModel);
+            }
+        }
+        for (int i = 0; i < blacks.size(); ++i) {
+            switch (blacks[i].pieceType) {
+            case PAWN:
+                blacks[i].DrawPiece(pawnModel);
+                break;
+            case KNIGHT:
+                blacks[i].DrawPiece(knightModel);
+                break;
+            case BISHOP:
+                blacks[i].DrawPiece(bishopModel);
+                break;
+            case ROOK:
+                blacks[i].DrawPiece(rookModel);
+                break;
+            case QUEEN:
+                blacks[i].DrawPiece(queenModel);
+                break;
+            default:
+                blacks[i].DrawPiece(kingModel);
+            }
+        }
 
         if (dot) {
             DrawCylinder(dotCenter, 0.1f, 0.1f, 0.05f, 8, RED);
@@ -178,10 +189,6 @@ int main()
 
         if (IsKeyPressed('B')) {
             ResetCameraPosition(camera);
-        }
-
-        if (IsKeyPressed('F')) {
-            pionekA2.MoveTo(pionekA2.position.x + 3, pionekA2.position.y + 3);
         }
 
         SetMouseCursor(3);
@@ -207,6 +214,52 @@ int main()
                         dotCenter = { p1.x + 0.5f,p1.y,p1.z + 0.5f };
                         dot = true;
                         boardClicked = true;
+                        if (whiteTurn) {
+                            for (int i = 0; i < whites.size(); ++i) {
+                                if (whites[i].selected) {
+                                    whites[i].MoveTo(a + 1, 8 - b);
+                                    for (int j = 0; j < blacks.size(); ++j) {
+                                        if (blacks[j].position.x == a + 1 and blacks[j].position.y == 8 - b) {
+                                            std::vector<piece>::iterator it = blacks.begin() + j;
+                                            blacks.erase(it);
+                                        }
+                                    }
+                                    whites[i].selected = false;
+                                    whiteTurn = false;
+                                }
+                            }
+                            for (int i = 0; i < whites.size(); ++i) {
+                                if (whites[i].position.x - 1 == a and whites[i].position.y == 8 - b) {
+                                    for (int j = 0; j < whites.size(); ++j) {
+                                        whites[j].selected = false;
+                                    }
+                                    whites[i].selected = true;
+                                }
+                            }
+                        }
+                        else {
+                            for (int i = 0; i < blacks.size(); ++i) {
+                                if (blacks[i].selected) {
+                                    blacks[i].MoveTo(a + 1, 8 - b);
+                                    for (int j = 0; j < whites.size(); ++j) {
+                                        if (whites[j].position.x == a + 1 and whites[j].position.y == 8 - b) {
+                                            std::vector<piece>::iterator it = whites.begin() + j;
+                                            whites.erase(it);
+                                        }
+                                    }
+                                    blacks[i].selected = false;
+                                    whiteTurn = true;
+                                }
+                            }
+                            for (int i = 0; i < blacks.size(); ++i) {
+                                if (blacks[i].position.x - 1 == a and blacks[i].position.y == 8 - b) {
+                                    for (int j = 0; j < blacks.size(); ++j) {
+                                        blacks[j].selected = false;
+                                    }
+                                    blacks[i].selected = true;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -276,11 +329,15 @@ void DrawSign(int sign, Vector3 position, Color color)
 
 piece::piece(int x, int y)
 {
+    selected = false;
     position.x = x;
     position.y = y;
     targetPosition = position;
     isMoving = false;
     moveSpeed = 0.05f;
+    heightOffset = 0.0f;
+    targetHeightOffset = 0.75f;
+    moveStage = 0;
     if (y == 1 or y == 2)
         isWhite = true;
     else
@@ -318,12 +375,22 @@ piece::~piece()
 void piece::DrawPiece(Model model)
 {
     Color color;
-    if (isWhite)
-        color = RAYWHITE;
+    Color whitePiece = { 215,194,185,255 };
+    Color blackPiece = { 70,51,43,255 };
+    if (isWhite and !selected)
+        color = whitePiece;
+    else if (!isWhite and !selected)
+        color = blackPiece;
+    else if (isWhite and selected)
+        color = YELLOW;
     else
-        color = BLACK;
-    Vector3 pos = { -4.45 + position.x, 0.0f, 4.5f - position.y };
-    DrawModel(model, pos, 0.2f, color);
+        color = RED;
+
+    Vector3 pos = { -4.45f + position.x, 0.0f + heightOffset, 4.5f - position.y };
+    if (pieceType == ROOK)
+        DrawModel(model, pos, 0.3f, color);
+    else
+        DrawModel(model, pos, 0.2f, color);
 }
 
 void piece::MoveForward()
@@ -339,23 +406,45 @@ void piece::MoveTo(int x, int y) {
     targetPosition.x = x;
     targetPosition.y = y;
     isMoving = true;
+    moveStage = 0;
 }
 
 void piece::UpdatePosition() {
     if (!isMoving) return;
 
-    // Interpolacja pozycji
-    float deltaX = targetPosition.x - position.x;
-    float deltaY = targetPosition.y - position.y;
-    float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
-
-    if (distance < moveSpeed) {
-        position = targetPosition;
-        isMoving = false;
+    // Ruch składa się z trzech etapów
+    if (moveStage == 0) { // Podnoszenie
+        if (heightOffset < targetHeightOffset) {
+            heightOffset += moveSpeed;
+            if (heightOffset >= targetHeightOffset) {
+                heightOffset = targetHeightOffset;
+                moveStage = 1; // Przejście do etapu 2: Ruch poziomy
+            }
+        }
     }
-    else {
-        position.x += (deltaX / distance) * moveSpeed;
-        position.y += (deltaY / distance) * moveSpeed;
+    else if (moveStage == 1) { // Ruch poziomy
+        float deltaX = targetPosition.x - position.x;
+        float deltaY = targetPosition.y - position.y;
+        float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        if (distance < moveSpeed) {
+            position = targetPosition;
+            moveStage = 2; // Przejście do etapu 3: Opuszczanie
+        }
+        else {
+            position.x += (deltaX / distance) * moveSpeed;
+            position.y += (deltaY / distance) * moveSpeed;
+        }
+    }
+    else if (moveStage == 2) { // Opuszczanie
+        if (heightOffset > 0.0f) {
+            heightOffset -= moveSpeed;
+            if (heightOffset <= 0.0f) {
+                heightOffset = 0.0f;
+                isMoving = false; // Ruch zakończony
+                moveStage = 0; // Zresetowanie etapu ruchu
+            }
+        }
     }
 }
 
@@ -365,5 +454,3 @@ void ResetCameraPosition(Camera3D& camera)
     camera.target = Vector3{ 0.0f, 0.0f, 0.0f };
     camera.up = Vector3{ 0.0f, 1.0f, 0.0f };
 }
-
-
