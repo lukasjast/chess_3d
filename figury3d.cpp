@@ -2,8 +2,13 @@
 #include "rlgl.h"
 #include "cmath"
 #include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
 
 void DrawSign(int sign, Vector3 position, Color color);
+
+std::vector<int> loadMovesFromFile(const std::string& filename);
 
 class piece {
 public:
@@ -30,6 +35,17 @@ enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 
 //dodane funkcje
 void ResetCameraPosition(Camera3D& camera);
+bool TurnDone(std::vector<piece>& plr, std::vector<piece>& opp, int posx, int posy);
+
+void AddToHistory(piece pc, Vector2 prevPos);
+void PrevMove(std::vector<piece>& plr, std::vector<piece>& opp);
+void MakeMove(std::vector<piece>& plr, std::vector<piece>& opp, const std::vector<int>& moves, int licznik);
+
+// bufory do zapisywania ruchow
+std::vector<Vector2> historyCurrPos;
+std::vector<piece> historyDeleted;
+std::vector<Vector2> historyPrevPos;
+std::vector<bool> isDeleted;
 
 int main()
 {
@@ -38,17 +54,17 @@ int main()
 
     InitWindow(screenWidth, screenHeight, "Szachy 3D");
 
-    Camera3D camera = { 0 };
-    ResetCameraPosition(camera);
-    camera.fovy = 45.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
-
     Model pawnModel = LoadModel("obj/pawn.obj");
     Model knightModel = LoadModel("obj/knight.obj");
     Model bishopModel = LoadModel("obj/bishop.obj");
     Model rookModel = LoadModel("obj/rook.obj");
     Model queenModel = LoadModel("obj/queen.obj");
     Model kingModel = LoadModel("obj/king.obj");
+
+    Camera3D camera = { 0 };
+    ResetCameraPosition(camera);
+    camera.fovy = 45.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
 
     bool spot = true;
     bool start = false;
@@ -86,6 +102,14 @@ int main()
             blacks.push_back(p);
         }
     }
+
+    std::vector<int> ruchy = loadMovesFromFile("moves.txt");
+
+    for (const int move : ruchy) {
+        std::cout << move << std::endl;
+    }
+
+
 
     DisableCursor();
     SetTargetFPS(60);
@@ -173,7 +197,6 @@ int main()
                 blacks[i].DrawPiece(kingModel);
             }
         }
-
         if (dot) {
             DrawCylinder(dotCenter, 0.1f, 0.1f, 0.05f, 8, RED);
         }
@@ -215,50 +238,12 @@ int main()
                         dot = true;
                         boardClicked = true;
                         if (whiteTurn) {
-                            for (int i = 0; i < whites.size(); ++i) {
-                                if (whites[i].selected) {
-                                    whites[i].MoveTo(a + 1, 8 - b);
-                                    for (int j = 0; j < blacks.size(); ++j) {
-                                        if (blacks[j].position.x == a + 1 and blacks[j].position.y == 8 - b) {
-                                            std::vector<piece>::iterator it = blacks.begin() + j;
-                                            blacks.erase(it);
-                                        }
-                                    }
-                                    whites[i].selected = false;
-                                    whiteTurn = false;
-                                }
-                            }
-                            for (int i = 0; i < whites.size(); ++i) {
-                                if (whites[i].position.x - 1 == a and whites[i].position.y == 8 - b) {
-                                    for (int j = 0; j < whites.size(); ++j) {
-                                        whites[j].selected = false;
-                                    }
-                                    whites[i].selected = true;
-                                }
-                            }
+                            if (TurnDone(whites, blacks, a + 1, 8 - b))
+                                whiteTurn = false;
                         }
                         else {
-                            for (int i = 0; i < blacks.size(); ++i) {
-                                if (blacks[i].selected) {
-                                    blacks[i].MoveTo(a + 1, 8 - b);
-                                    for (int j = 0; j < whites.size(); ++j) {
-                                        if (whites[j].position.x == a + 1 and whites[j].position.y == 8 - b) {
-                                            std::vector<piece>::iterator it = whites.begin() + j;
-                                            whites.erase(it);
-                                        }
-                                    }
-                                    blacks[i].selected = false;
-                                    whiteTurn = true;
-                                }
-                            }
-                            for (int i = 0; i < blacks.size(); ++i) {
-                                if (blacks[i].position.x - 1 == a and blacks[i].position.y == 8 - b) {
-                                    for (int j = 0; j < blacks.size(); ++j) {
-                                        blacks[j].selected = false;
-                                    }
-                                    blacks[i].selected = true;
-                                }
-                            }
+                            if (TurnDone(blacks, whites, a + 1, 8 - b))
+                                whiteTurn = true;
                         }
                     }
                 }
@@ -266,6 +251,36 @@ int main()
             if (!boardClicked)
                 dot = false;
         }
+        if (IsKeyPressed('P')) {
+            if (whiteTurn) {
+                PrevMove(blacks, whites);
+                whiteTurn = false;
+            }
+            else {
+                PrevMove(whites, blacks);
+                whiteTurn = true;
+            }
+        }
+
+        static int liczba = 0;
+        static int liczba2 = 1;
+        static int liczba3 = 2;
+        if (IsKeyPressed('N'))
+        {
+            // Wykonaj ruch na podstawie moves dla białych
+            MakeMove(whites, blacks, ruchy, liczba);
+            liczba++; // Inkrementuj liczbę, aby wykonać kolejny ruch
+            whiteTurn = false; // Zmiana tury na czarne
+        }
+
+        if (IsKeyPressed('C'))
+        {
+            // Wykonaj ruch na podstawie moves dla czarnych
+            MakeMove(blacks, whites, ruchy, liczba2);
+            liczba2++; // Inkrementuj liczbę, aby wykonać kolejny ruch czarnych
+            whiteTurn = true; // Zmiana tury na białe
+        }
+
 
         DrawText("Sterowanie - 'I'", 20, 20, 30, RAYWHITE);
         if (IsKeyPressed('I'))
@@ -276,7 +291,9 @@ int main()
             DrawText("Spacja - odblokuj/zablokuj kamere", 25, 65, 40, BLACK);
             DrawText("W, A, S, D - sterowanie pozycja kamery", 25, 105, 40, BLACK);
             DrawText("Strzalkami operujemy katem kamery", 25, 145, 40, BLACK);
-            DrawText("B reset polozenia kamery", 25, 185, 40, BLACK);
+            DrawText("B - reset polozenia kamery", 25, 185, 40, BLACK);
+            DrawText("LPM - zaznacz pole/figure", 25, 225, 40, BLACK);
+            DrawText("P - cofanie ruchu", 25, 265, 40, BLACK);
         }
         EndDrawing();
     }
@@ -336,7 +353,7 @@ piece::piece(int x, int y)
     isMoving = false;
     moveSpeed = 0.05f;
     heightOffset = 0.0f;
-    targetHeightOffset = 0.75f;
+    targetHeightOffset = 0.5f;
     moveStage = 0;
     if (y == 1 or y == 2)
         isWhite = true;
@@ -418,7 +435,7 @@ void piece::UpdatePosition() {
             heightOffset += moveSpeed;
             if (heightOffset >= targetHeightOffset) {
                 heightOffset = targetHeightOffset;
-                moveStage = 1; // Przejście do etapu 2: Ruch poziomy
+                moveStage = 1;
             }
         }
     }
@@ -429,7 +446,7 @@ void piece::UpdatePosition() {
 
         if (distance < moveSpeed) {
             position = targetPosition;
-            moveStage = 2; // Przejście do etapu 3: Opuszczanie
+            moveStage = 2;
         }
         else {
             position.x += (deltaX / distance) * moveSpeed;
@@ -441,16 +458,156 @@ void piece::UpdatePosition() {
             heightOffset -= moveSpeed;
             if (heightOffset <= 0.0f) {
                 heightOffset = 0.0f;
-                isMoving = false; // Ruch zakończony
-                moveStage = 0; // Zresetowanie etapu ruchu
+                isMoving = false;
+                moveStage = 0;
             }
         }
     }
 }
+
 
 void ResetCameraPosition(Camera3D& camera)
 {
     camera.position = Vector3{ 10.0f, 10.0f, 10.0f };
     camera.target = Vector3{ 0.0f, 0.0f, 0.0f };
     camera.up = Vector3{ 0.0f, 1.0f, 0.0f };
+}
+
+
+//funkcja do przesuwania figur. zwraca true, jesli ruch zostal zrobiony
+bool TurnDone(std::vector<piece>& plr, std::vector<piece>& opp, int posx, int posy)
+{
+    for (int i = 0; i < plr.size(); ++i) {
+        if (plr[i].selected) {
+            for (int j = 0; j < plr.size(); ++j) {
+                if (plr[j].position.x == posx and plr[j].position.y == posy and i != j) {
+                    plr[i].selected = false;
+                    plr[j].selected = true;
+                    return false;
+                }
+            }
+            bool deleted = false;
+            Vector2 prevPos = plr[i].position;
+            plr[i].MoveTo(posx, posy);
+            for (int k = 0; k < opp.size(); ++k) {
+                if (opp[k].position.x == posx and opp[k].position.y == posy) {
+                    historyDeleted.insert(historyDeleted.begin(), opp[k]);
+                    std::vector<piece>::iterator it = opp.begin() + k;
+                    opp.erase(it);
+                    deleted = true;
+                }
+            }
+            plr[i].selected = false;
+            if (deleted)
+                isDeleted.insert(isDeleted.begin(), true);
+            else
+                isDeleted.insert(isDeleted.begin(), false);
+            AddToHistory(plr[i], prevPos);
+            return true;
+        }
+    }
+    for (int i = 0; i < plr.size(); ++i) {
+        if (plr[i].position.x == posx and plr[i].position.y == posy) {
+            for (int j = 0; j < plr.size(); ++j) {
+                plr[j].selected = false;
+            }
+            plr[i].selected = true;
+        }
+    }
+    return false;
+}
+
+// cofanie ruchow
+
+void AddToHistory(piece pc, Vector2 prevPos)
+{
+    historyPrevPos.insert(historyPrevPos.begin(), prevPos);
+    Vector2 currPos;
+    currPos = pc.targetPosition;
+    historyCurrPos.insert(historyCurrPos.begin(), currPos);
+}
+
+void PrevMove(std::vector<piece>& plr, std::vector<piece>& opp) {
+    if (!historyCurrPos.empty()) {
+        int x = historyPrevPos[0].x;
+        int y = historyPrevPos[0].y;
+        for (int i = 0; i < plr.size(); ++i) {
+            if (plr[i].position.x == historyCurrPos[0].x and plr[i].position.y == historyCurrPos[0].y)
+                plr[i].MoveTo(x, y);
+        }
+        if (isDeleted[0]) {
+            opp.push_back(historyDeleted[0]);
+            std::vector<piece>::iterator it = historyDeleted.begin();
+            historyDeleted.erase(it);
+        }
+        std::vector<bool>::iterator it1 = isDeleted.begin();
+        std::vector<Vector2>::iterator it2 = historyPrevPos.begin();
+        std::vector<Vector2>::iterator it3 = historyCurrPos.begin();
+        isDeleted.erase(it1);
+        historyPrevPos.erase(it2);
+        historyCurrPos.erase(it3);
+    }
+}
+
+void MakeMove(std::vector<piece>& plr, std::vector<piece>& opp, const std::vector<int>& moves, int moveIndex)
+{
+    if (moves.empty() || moveIndex >= moves.size())
+        return;
+
+    // Pobieramy współrzędne pola źródłowego i docelowego z ruchu
+    int srcX = moves[moveIndex] / 1000 % 10;   // Pierwsza cyfra
+    int srcY = moves[moveIndex] / 100 % 10;    // Druga cyfra
+    int destX = moves[moveIndex] / 10 % 10;    // Trzecia cyfra
+    int destY = moves[moveIndex] % 10;         // Czwarta cyfra
+
+    // Szukamy figury do przesunięcia na polu źródłowym
+    for (int i = 0; i < plr.size(); ++i) {
+        if (plr[i].position.x == srcX && plr[i].position.y == srcY) {
+            // Sprawdzamy, czy na polu docelowym znajduje się figura przeciwnika
+            bool deleted = false;
+            for (int j = 0; j < opp.size(); ++j) {
+                if (opp[j].position.x == destX && opp[j].position.y == destY) {
+                    // Usuwamy figurę przeciwnika z planszy
+                    opp.erase(opp.begin() + j);
+                    deleted = true;
+                    break;
+                }
+            }
+
+            // wykonujemy ruch figury
+            Vector2 prevPos = plr[i].position;
+            plr[i].MoveTo(destX, destY);
+            plr[i].selected = false;
+
+            AddToHistory(plr[i], prevPos);
+
+            break;
+        }
+    }
+}
+
+// wczytywanie ruchow z pliku oraz zapisanie ich w vectorze jako zmienne typu int
+std::vector<int> loadMovesFromFile(const std::string& filename) {
+    std::vector<int> moves;
+    std::ifstream inFile(filename);
+    if (inFile.is_open()) {
+        std::string line;
+        while (std::getline(inFile, line)) {
+            try {
+                int move = std::stoi(line);
+                moves.push_back(move);
+            }
+            catch (const std::invalid_argument& e) {
+                std::cerr << "Invalid data in file: " << line << std::endl;
+            }
+            catch (const std::out_of_range& e) {
+                std::cerr << "Number out of range in file: " << line << std::endl;
+            }
+        }
+        inFile.close();
+    }
+    else {
+        std::cerr << "Unable to open file for reading: " << filename << std::endl;
+    }
+    return moves;
 }
