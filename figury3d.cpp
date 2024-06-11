@@ -26,7 +26,6 @@ public:
     int moveStage;
 
     void DrawPiece(Model model);
-    void MoveForward();
     void MoveTo(int x, int y);
     void UpdatePosition();
 };
@@ -264,23 +263,20 @@ int main()
 
         static int liczba = 0;
         static int liczba2 = 1;
-        static int liczba3 = 2;
+        //static int liczba3 = 2;
         if (IsKeyPressed('N'))
         {
-            // Wykonaj ruch na podstawie moves dla białych
             MakeMove(whites, blacks, ruchy, liczba);
-            liczba++; // Inkrementuj liczbę, aby wykonać kolejny ruch
-            whiteTurn = false; // Zmiana tury na czarne
+            liczba++; 
+            whiteTurn = false;
         }
 
         if (IsKeyPressed('C'))
         {
-            // Wykonaj ruch na podstawie moves dla czarnych
             MakeMove(blacks, whites, ruchy, liczba2);
-            liczba2++; // Inkrementuj liczbę, aby wykonać kolejny ruch czarnych
-            whiteTurn = true; // Zmiana tury na białe
+            liczba2++; 
+            whiteTurn = true; 
         }
-
 
         DrawText("Sterowanie - 'I'", 20, 20, 30, RAYWHITE);
         if (IsKeyPressed('I'))
@@ -294,12 +290,14 @@ int main()
             DrawText("B - reset polozenia kamery", 25, 185, 40, BLACK);
             DrawText("LPM - zaznacz pole/figure", 25, 225, 40, BLACK);
             DrawText("P - cofanie ruchu", 25, 265, 40, BLACK);
+            DrawText("N/C - wykonanie odpowiednio ruchu bialych i czanrych figur z pliku", 25, 305, 40, BLACK);
         }
         EndDrawing();
     }
     CloseWindow();
     return 0;
 }
+
 
 void DrawSign(int sign, Vector3 position, Color color)
 {
@@ -344,6 +342,7 @@ void DrawSign(int sign, Vector3 position, Color color)
     rlSetTexture(0);
 }
 
+//konstruktor klasy piece
 piece::piece(int x, int y)
 {
     selected = false;
@@ -410,15 +409,7 @@ void piece::DrawPiece(Model model)
         DrawModel(model, pos, 0.2f, color);
 }
 
-void piece::MoveForward()
-{
-    if (isWhite) {
-        position.y += 1;
-    }
-    else {
-        position.y -= 1;
-    }
-}
+
 void piece::MoveTo(int x, int y) {
     targetPosition.x = x;
     targetPosition.y = y;
@@ -426,11 +417,12 @@ void piece::MoveTo(int x, int y) {
     moveStage = 0;
 }
 
+//funkcja odpowiedzialna za ruch figur, podzielona na 3 etapy
 void piece::UpdatePosition() {
     if (!isMoving) return;
 
-    // Ruch składa się z trzech etapów
-    if (moveStage == 0) { // Podnoszenie
+    
+    if (moveStage == 0) { 
         if (heightOffset < targetHeightOffset) {
             heightOffset += moveSpeed;
             if (heightOffset >= targetHeightOffset) {
@@ -439,7 +431,7 @@ void piece::UpdatePosition() {
             }
         }
     }
-    else if (moveStage == 1) { // Ruch poziomy
+    else if (moveStage == 1) { 
         float deltaX = targetPosition.x - position.x;
         float deltaY = targetPosition.y - position.y;
         float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -453,7 +445,7 @@ void piece::UpdatePosition() {
             position.y += (deltaY / distance) * moveSpeed;
         }
     }
-    else if (moveStage == 2) { // Opuszczanie
+    else if (moveStage == 2) { 
         if (heightOffset > 0.0f) {
             heightOffset -= moveSpeed;
             if (heightOffset <= 0.0f) {
@@ -465,7 +457,7 @@ void piece::UpdatePosition() {
     }
 }
 
-
+//funkcja wywolywana aby ustawic kamere do pozycji poczatkowej
 void ResetCameraPosition(Camera3D& camera)
 {
     camera.position = Vector3{ 10.0f, 10.0f, 10.0f };
@@ -517,8 +509,6 @@ bool TurnDone(std::vector<piece>& plr, std::vector<piece>& opp, int posx, int po
     return false;
 }
 
-// cofanie ruchow
-
 void AddToHistory(piece pc, Vector2 prevPos)
 {
     historyPrevPos.insert(historyPrevPos.begin(), prevPos);
@@ -527,6 +517,7 @@ void AddToHistory(piece pc, Vector2 prevPos)
     historyCurrPos.insert(historyCurrPos.begin(), currPos);
 }
 
+//funkcja cofajaca wykonany ruch
 void PrevMove(std::vector<piece>& plr, std::vector<piece>& opp) {
     if (!historyCurrPos.empty()) {
         int x = historyPrevPos[0].x;
@@ -549,32 +540,29 @@ void PrevMove(std::vector<piece>& plr, std::vector<piece>& opp) {
     }
 }
 
+//funkcja odpowiedzialna za ruch figur zczytywany z pliku tekstowego
 void MakeMove(std::vector<piece>& plr, std::vector<piece>& opp, const std::vector<int>& moves, int moveIndex)
 {
     if (moves.empty() || moveIndex >= moves.size())
         return;
 
-    // Pobieramy współrzędne pola źródłowego i docelowego z ruchu
+    // pobieranie wspolrzednych pola startowego i docelowego 
     int srcX = moves[moveIndex] / 1000 % 10;   // Pierwsza cyfra
-    int srcY = moves[moveIndex] / 100 % 10;    // Druga cyfra
-    int destX = moves[moveIndex] / 10 % 10;    // Trzecia cyfra
-    int destY = moves[moveIndex] % 10;         // Czwarta cyfra
+    int srcY = moves[moveIndex] / 100 % 10;    
+    int destX = moves[moveIndex] / 10 % 10;    
+    int destY = moves[moveIndex] % 10;        
 
-    // Szukamy figury do przesunięcia na polu źródłowym
     for (int i = 0; i < plr.size(); ++i) {
         if (plr[i].position.x == srcX && plr[i].position.y == srcY) {
-            // Sprawdzamy, czy na polu docelowym znajduje się figura przeciwnika
             bool deleted = false;
             for (int j = 0; j < opp.size(); ++j) {
                 if (opp[j].position.x == destX && opp[j].position.y == destY) {
-                    // Usuwamy figurę przeciwnika z planszy
                     opp.erase(opp.begin() + j);
                     deleted = true;
                     break;
                 }
             }
 
-            // wykonujemy ruch figury
             Vector2 prevPos = plr[i].position;
             plr[i].MoveTo(destX, destY);
             plr[i].selected = false;
